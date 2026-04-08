@@ -407,16 +407,18 @@
     }
     .mobile-nav{
       display:none;
-      position:absolute;
-      right:0;
-      top:64px;
+      position:fixed;
+      top:16px;
+      right:var(--pad);
+      left:auto;
       min-width:240px;
       padding:12px;
       border-radius:16px;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(0,0,0,.72);
-      backdrop-filter: blur(10px);
-      z-index:10;
+      border:1px solid rgba(255,255,255,.22);
+      background:rgba(7,7,8,.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index:9999;
     }
     .mobile-nav a{
       display:block;
@@ -990,22 +992,29 @@
     }
 
     /* ── Gallery slider ── */
+    /* ── Gallery Slider (scroll-snap) ── */
+    .section.approach { overflow: hidden; }
+    .approach-grid > * { min-width: 0; }
+
     .gallery-slider-outer {
       position: relative;
+      overflow: hidden;
     }
     .approach-gallery[data-slider] {
       display: flex !important;
-      gap: 12px !important;
-      overflow: hidden !important;
-      transition: transform 0.42s cubic-bezier(.25,.46,.45,.94);
-      cursor: grab;
-      user-select: none;
-      will-change: transform;
-      /* Remove grid */
+      gap: 12px;
+      overflow-x: scroll;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      /* kill old grid */
       grid-template-columns: unset !important;
-      border-radius: 0;
+      cursor: grab;
     }
     .approach-gallery[data-slider]:active { cursor: grabbing; }
+    .approach-gallery[data-slider]::-webkit-scrollbar { display: none; }
     .approach-gallery[data-slider] figure,
     .approach-gallery[data-slider] figure.big,
     .approach-gallery[data-slider] figure.wide {
@@ -1013,18 +1022,19 @@
       height: 260px !important;
       grid-column: unset !important;
       grid-row: unset !important;
+      scroll-snap-align: start;
       border-radius: 14px;
       overflow: hidden;
       border: 1px solid rgba(255,255,255,.13);
       margin: 0;
+      flex-shrink: 0;
     }
     @media (max-width: 700px) {
       .approach-gallery[data-slider] figure,
       .approach-gallery[data-slider] figure.big,
       .approach-gallery[data-slider] figure.wide {
-        flex: 0 0 calc(85% - 6px) !important;
-        height: 300px !important;
-        aspect-ratio: 4/5;
+        flex: 0 0 calc(82% - 6px) !important;
+        height: 260px !important;
       }
     }
 
@@ -1096,9 +1106,7 @@
     .nav-open .burger span:nth-child(3) {
       transform: translateY(-8px) rotate(-45deg);
     }
-    .mobile-nav {
-      z-index: 200 !important;
-    }
+    /* mobile-nav z-index handled above */
     .nav-open .mobile-nav {
       animation: mobileNavIn .22s cubic-bezier(.25,.46,.45,.94);
     }
@@ -1151,6 +1159,20 @@
     @media (max-width: 640px) {
       :root { --sectionY: 80px; --sectionTightY: 64px; }
     }
+
+  
+    /* Mobile nav backdrop */
+    .nav-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 9998;
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+    .nav-open .nav-backdrop { display: block; }
+    .nav-open .mobile-nav { display: block; }
 
   </style>
 </head>
@@ -1221,6 +1243,7 @@
 
       </div>
     </div>
+    <div class="nav-backdrop" id="navBackdrop" aria-hidden="true"></div>
   </header>
 
   <section class="section tight about" id="about">
@@ -1600,6 +1623,9 @@
         if(!isClickInside) closeMenu();
       });
 
+      const backdrop = document.getElementById('navBackdrop');
+      if(backdrop) backdrop.addEventListener('click', closeMenu);
+
       menu.querySelectorAll('a').forEach(a=>a.addEventListener('click', closeMenu));
       window.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenu(); });
     })();
@@ -1686,20 +1712,19 @@
 
 
   <script>
-  /* ── Gallery Slider ── */
+  /* ── Gallery Slider (scroll-snap) ── */
   (function(){
     var gallery = document.querySelector('.approach-gallery[data-slider]');
     if(!gallery) return;
 
-    // Wrap
     var outer = document.querySelector('.gallery-slider-outer');
-    if(!outer){ outer = document.createElement('div'); outer.className='gallery-slider-outer'; gallery.parentNode.insertBefore(outer,gallery); outer.appendChild(gallery); }
+    if(!outer) return;
 
     var slides = Array.from(gallery.querySelectorAll('figure'));
     var total = slides.length;
     var current = 0;
 
-    // Buttons
+    /* Nav buttons */
     var prev = document.createElement('button');
     prev.className = 'gallery-nav gallery-prev'; prev.type='button'; prev.setAttribute('aria-label','Предыдущее');
     prev.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -1708,7 +1733,7 @@
     next.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     outer.appendChild(prev); outer.appendChild(next);
 
-    // Dots
+    /* Dots */
     var dotsRow = document.createElement('div'); dotsRow.className='gallery-dots-row'; outer.appendChild(dotsRow);
     var dots = slides.map(function(_, i){
       var d = document.createElement('button'); d.className='gdot'; d.type='button'; d.setAttribute('aria-label','Фото '+(i+1));
@@ -1716,49 +1741,51 @@
       dotsRow.appendChild(d); return d;
     });
 
-    function getSPV(){ return window.innerWidth >= 1100 ? 2 : window.innerWidth >= 640 ? 1.5 : 1.08; }
     function getSlideW(){
-      var spv = getSPV();
-      var gaps = Math.ceil(spv) - 1;
-      return (outer.offsetWidth - gaps * 12) / spv;
+      var f = slides[0];
+      return f ? f.offsetWidth + 12 : 0;
+    }
+
+    function getSPV(){
+      return window.innerWidth >= 1100 ? 2 : 1;
     }
 
     function goTo(n){
       var spv = getSPV();
-      var max = Math.max(0, total - Math.floor(spv));
+      var max = Math.max(0, total - spv);
       current = Math.max(0, Math.min(n, max));
       var w = getSlideW();
-      slides.forEach(function(f){ f.style.flex = '0 0 ' + w + 'px'; f.style.height = (window.innerWidth <= 700 ? '300px' : '260px'); });
-      gallery.style.transform = 'translateX(' + (-current * (w + 12)) + 'px)';
+      if(w > 0) gallery.scrollLeft = current * w;
       dots.forEach(function(d,i){ d.classList.toggle('active', i === current); });
-      prev.style.opacity = current <= 0 ? '0.3' : '1';
+      prev.style.opacity = current <= 0 ? '0.35' : '1';
       prev.style.pointerEvents = current <= 0 ? 'none' : '';
-      next.style.opacity = current >= max ? '0.3' : '1';
+      next.style.opacity = current >= max ? '0.35' : '1';
       next.style.pointerEvents = current >= max ? 'none' : '';
     }
 
     prev.addEventListener('click', function(){ goTo(current - 1); });
     next.addEventListener('click', function(){ goTo(current + 1); });
 
-    // Touch
-    var tx = 0;
-    gallery.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; }, {passive:true});
-    gallery.addEventListener('touchend', function(e){
-      var d = tx - e.changedTouches[0].clientX;
-      if(Math.abs(d) > 40) goTo(d > 0 ? current+1 : current-1);
+    /* Sync current index on native scroll */
+    var scrollTimer;
+    gallery.addEventListener('scroll', function(){
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function(){
+        var w = getSlideW();
+        if(w > 0){
+          current = Math.round(gallery.scrollLeft / w);
+          dots.forEach(function(d,i){ d.classList.toggle('active', i === current); });
+          var max = Math.max(0, total - getSPV());
+          prev.style.opacity = current <= 0 ? '0.35' : '1';
+          prev.style.pointerEvents = current <= 0 ? 'none' : '';
+          next.style.opacity = current >= max ? '0.35' : '1';
+          next.style.pointerEvents = current >= max ? 'none' : '';
+        }
+      }, 80);
     }, {passive:true});
 
-    // Mouse drag
-    var mx = 0, dragging = false;
-    gallery.addEventListener('mousedown', function(e){ dragging=true; mx=e.clientX; e.preventDefault(); });
-    window.addEventListener('mouseup', function(e){
-      if(!dragging) return; dragging=false;
-      var d = mx - e.clientX;
-      if(Math.abs(d) > 40) goTo(d > 0 ? current+1 : current-1);
-    });
-
     window.addEventListener('resize', function(){ goTo(current); }, {passive:true});
-    setTimeout(function(){ goTo(0); }, 60);
+    goTo(0);
   })();
 
   /* ── Reviews expand (mobile only) ── */
