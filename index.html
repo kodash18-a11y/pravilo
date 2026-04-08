@@ -1174,6 +1174,50 @@
     .nav-open .nav-backdrop { display: block; }
     .nav-open .mobile-nav { display: block; }
 
+  
+    /* ═══════════════════════════════════════════
+       MOBILE TYPOGRAPHY UNIFICATION
+    ═══════════════════════════════════════════ */
+
+    /* Pricing heading: center on desktop, left on mobile */
+    .h2-pricing { text-align: center; }
+
+    @media (max-width: 700px) {
+
+      /* Reviews: 1 колонка */
+      .review-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* Все заголовки — по левому краю */
+      .reviews-head { text-align: left; margin-left: 0; }
+      .reviews-head .h2, .reviews-head .p { text-align: left; }
+      .h2-pricing { text-align: left; }
+
+      /* Секция «О нас» — центр только для фото, текст по левому */
+      .about-center { text-align: left; align-items: flex-start; }
+      .about-photo { align-self: center; }
+
+      /* Правило: кикер и big-lines — по левому */
+      .center-stack { text-align: left; }
+      .big-lines { text-align: left; }
+
+      /* Все about-kicker — по левому */
+      .about-kicker[style*="text-align:center"] { text-align: left !important; }
+
+      /* h2 без inline стилей — по левому */
+      .h2 { text-align: left; }
+
+      /* Единый отступ section headings */
+      .about-kicker { margin-bottom: 18px !important; }
+
+      /* Меньше padding на section.light */
+      .section.light { padding-left: 0; padding-right: 0; }
+
+      /* note — по левому */
+      .note { text-align: left; }
+    }
+
   </style>
 </head>
 
@@ -1253,8 +1297,8 @@
 
         <h2 class="about-title" data-reveal>
           ПравИльные люди —<br>
-          сообщество мастеров с<br>
-          большим опытом и знаниями
+          сообщество мастеров<br>
+          с&nbsp;большим опытом и&nbsp;знаниями
         </h2>
 
         <div class="about-photo" data-reveal="scale">
@@ -1505,7 +1549,7 @@
 
   <section class="section pricing" id="pricing">
     <div class="container">
-      <h2 class="h2" data-reveal style="text-align:center;">ФОРМАТЫ И ЦЕНЫ</h2>
+      <h2 class="h2 h2-pricing" data-reveal>ФОРМАТЫ И&nbsp;ЦЕНЫ</h2>
 
       <div class="price-wrap" data-stagger>
         <div class="price">
